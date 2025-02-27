@@ -1,4 +1,3 @@
-
 CREATE TABLE Customers(
                           idCustomer BIGINT PRIMARY KEY,
                           CompanyName VARCHAR(64),
