@@ -3,7 +3,7 @@ INSERT INTO Orders(idOrder, idCustomer, Status) VALUES (100, 1, 'NEW');
 SELECT * FROM order_logs;
 
 -- Должно вызвать ошибку, если у клиента есть заказы
-DELETE FROM "Customers" WHERE "Customers"."idCustomer" = 1;
+DELETE FROM Customers WHERE Customers.idCustomer = 1;
 
 -- Должно вызвать ошибку
 UPDATE Product SET PrPrice = -5 WHERE idProduct = 1;
@@ -17,7 +17,7 @@ DELETE FROM Product WHERE idProduct = 2;
 SELECT * FROM Items WHERE idProduct = 2; -- Должно быть пусто
 
 -- Должно вызвать ошибку
-DROP TABLE "Customers";
+DROP TABLE Customers;
 
 --проверка задания по вариантам
 SELECT * FROM get_customer_by_company('name');
@@ -36,7 +36,7 @@ SELECT * FROM get_order_count_by_city();
 TRUNCATE TABLE Customers, Orders, Product, Items, order_status_log RESTART IDENTITY CASCADE;
 
 -- Добавляем тестовых клиентов
-INSERT INTO "Customers" ("idCustomer", CompanyName, LastName, FirstName, Address, City, IndexCode, Phone, Email)
+INSERT INTO Customers (idCustomer, CompanyName, LastName, FirstName, Address, City, IndexCode, Phone, Email)
 VALUES 
 (1, 'Company A', 'Smith', 'John', 'Address 1', 'New York', 10001, '1234567890', 'john@test.com'),
 (2, 'Company B', 'Johnson', 'Mike', 'Address 2', 'Boston', 20002, '2345678901', 'mike@test.com'),
@@ -87,15 +87,15 @@ idproduct | prname | prprice | price_row_number | price_rank | price_dense_rank
 
 -- Тест 5.2: Ранжирование клиентов по количеству заказов
 SELECT 
-    c."idCustomer",
+    c.idCustomer,
     c.LastName,
     COUNT(o.idOrder) AS order_count,
     ROW_NUMBER() OVER (ORDER BY COUNT(o.idOrder) DESC) AS row_num,
     RANK() OVER (ORDER BY COUNT(o.idOrder) DESC) AS rank_val,
     DENSE_RANK() OVER (ORDER BY COUNT(o.idOrder) DESC) AS dense_rank_val
-FROM "Customers" c
-LEFT JOIN Orders o ON c."idCustomer" = o.idCustomer
-GROUP BY c."idCustomer", c.LastName;
+FROM Customers c
+LEFT JOIN Orders o ON c.idCustomer = o.idCustomer
+GROUP BY c.idCustomer, c.LastName;
 
 /* Ожидаемый результат:
 idcustomer | lastname | order_count | row_num | rank_val | dense_rank_val
@@ -108,7 +108,7 @@ idcustomer | lastname | order_count | row_num | rank_val | dense_rank_val
 
 -- Тестирование DDL триггера (п.6)
 -- Тест 6.1: Попытка удаления таблицы (должна вызвать ошибку)
-DROP TABLE "Customers";
+DROP TABLE Customers;
 
 /* Ожидаемый результат:
 ОШИБКА:  Изменение структуры таблиц запрещено администратором
@@ -154,7 +154,7 @@ SET LastName = 'Smith-Jones', Status = 'Cancelled'
 WHERE idOrder = 1;
 
 -- Проверяем изменения
-SELECT * FROM "Customers" WHERE "idCustomer" = 1;
+SELECT * FROM Customers WHERE idCustomer = 1;
 SELECT * FROM Orders WHERE idOrder = 1;
 
 /* Ожидаемый результат:

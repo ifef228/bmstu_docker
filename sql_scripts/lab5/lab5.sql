@@ -23,7 +23,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER before_customer_delete
-BEFORE DELETE ON "Customers"
+BEFORE DELETE ON Customers
 FOR EACH ROW
 EXECUTE FUNCTION prevent_customer_delete();
 
@@ -87,7 +87,7 @@ INSERT INTO Orders(idOrder, idCustomer, Status) VALUES (100, 1, 'NEW');
 SELECT * FROM order_logs;
 
 -- Должно вызвать ошибку, если у клиента есть заказы
-DELETE FROM "Customers" WHERE "Customers"."idCustomer" = 1;
+DELETE FROM Customers WHERE Customers.idCustomer = 1;
 
 -- Должно вызвать ошибку
 UPDATE Product SET PrPrice = -5 WHERE idProduct = 1;
@@ -101,7 +101,7 @@ DELETE FROM Product WHERE idProduct = 2;
 SELECT * FROM Items WHERE idProduct = 2; -- Должно быть пусто
 
 -- Должно вызвать ошибку
-DROP TABLE "Customers";
+DROP TABLE Customers;
 
 
 -- зыдание по вариантам
@@ -120,7 +120,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT 
-        c."idCustomer",
+        c.idCustomer,
         c.CompanyName,
         c.LastName,
         c.FirstName,
@@ -128,7 +128,7 @@ BEGIN
         c.City,
         c.Phone,
         c.Email
-    FROM "Customers" c
+    FROM Customers c
     WHERE c.CompanyName ILIKE '%' || company_name || '%';
 END;
 $$ LANGUAGE plpgsql;
@@ -183,7 +183,7 @@ BEGIN
         o.Status,
         c.LastName || ' ' || c.FirstName::TEXT  -- Явное приведение к TEXT
     FROM Orders o
-    JOIN "Customers" c ON o.idCustomer = c."idCustomer"
+    JOIN Customers c ON o.idCustomer = c.idCustomer
     WHERE 
         (order_date_from IS NULL OR o.orderDate >= order_date_from) AND
         (order_date_to IS NULL OR o.orderDate <= order_date_to) AND
@@ -215,7 +215,7 @@ BEGIN
         o.ShipDate,
         (c.LastName || ' ' || c.FirstName)::VARCHAR(128)
     FROM Orders o
-    JOIN "Customers" c ON o.idCustomer = c."idCustomer"
+    JOIN Customers c ON o.idCustomer = c.idCustomer
     WHERE o.orderDate BETWEEN date_from AND date_to
     ORDER BY c.City, o.ShipDate;
 END;
@@ -234,8 +234,8 @@ BEGIN
     SELECT 
         c.City,
         COUNT(o.idOrder)::BIGINT
-    FROM "Customers" c
-    LEFT JOIN Orders o ON c."idCustomer" = o.idCustomer
+    FROM Customers c
+    LEFT JOIN Orders o ON c.idCustomer = o.idCustomer
     GROUP BY c.City
     ORDER BY COUNT(o.idOrder) DESC;
 END;
@@ -361,16 +361,16 @@ FROM Product;
 
 -- Пример с клиентами по количеству заказов
 SELECT 
-    c."idCustomer",
+    c.idCustomer,
     c.LastName,
     c.FirstName,
     COUNT(o.idOrder) AS order_count,
     ROW_NUMBER() OVER (ORDER BY COUNT(o.idOrder) DESC) AS customer_row_number,
     RANK() OVER (ORDER BY COUNT(o.idOrder) DESC) AS customer_rank,
     DENSE_RANK() OVER (ORDER BY COUNT(o.idOrder) DESC) AS customer_dense_rank
-FROM "Customers" c
-LEFT JOIN Orders o ON c."idCustomer" = o.idCustomer
-GROUP BY c."idCustomer", c.LastName, c.FirstName;
+FROM Customers c
+LEFT JOIN Orders o ON c.idCustomer = o.idCustomer
+GROUP BY c.idCustomer, c.LastName, c.FirstName;
 
 --6. DDL триггер запрета удаления таблиц
 CREATE OR REPLACE FUNCTION prevent_table_modification()
@@ -442,7 +442,7 @@ EXECUTE FUNCTION log_order_status_change();
 -- Создаем представление для сложных операций
 CREATE VIEW customer_order_details AS
 SELECT 
-    c."idCustomer",
+    c.idCustomer,
     c.LastName,
     c.FirstName,
     c.City,
@@ -452,8 +452,8 @@ SELECT
     (SELECT SUM(i.Quantity * p.PrPrice) 
      FROM Items i JOIN Product p ON i.idProduct = p.idProduct
      WHERE i.idOrder = o.idOrder) AS total_amount
-FROM "Customers" c
-JOIN Orders o ON c."idCustomer" = o.idCustomer;
+FROM Customers c
+JOIN Orders o ON c.idCustomer = o.idCustomer;
 
 -- Триггер замещения для обновления
 CREATE OR REPLACE FUNCTION update_customer_order_details()
