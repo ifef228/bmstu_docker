@@ -1,5 +1,19 @@
+version: '3'
 services:
-  replica_postgres:  # Измените имя сервиса во избежание конфликтов!
+  postgres_labs:
+    image: postgres:13.3
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - bmstu_docker_pg_data:/var/lib/postgresql/data
+      - bmstu_docker_pg_ts:/var/lib/postgresql/tablespaces
+      - backups:/backups 
+      
+  replica_postgres_labs:
     image: postgres:13.3
     environment:
       - POSTGRES_USER=user
@@ -7,10 +21,13 @@ services:
     ports:
       - '5433:5433'
     volumes:
-      - pg_replica_data:/var/lib/postgresql/data  # Отдельный том
-      - pg_replica_ts:/var/lib/postgresql/tablespaces  # Том для пространств
-      - ./backup:/backup:ro  # Только чтение
+      - pg_replica_data:/var/lib/postgresql/data
+      - pg_replica_ts:/var/lib/postgresql/tablespaces
+      - backups:/backups     # общий том здесь
 
 volumes:
+  bmstu_docker_pg_data:
+  bmstu_docker_pg_ts:
   pg_replica_data:
   pg_replica_ts:
+  backups: 
