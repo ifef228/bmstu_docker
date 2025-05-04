@@ -79,7 +79,7 @@ LANGUAGE plpgsql;
 ```
 - использование: 
 ```sql
-SELECT * FROM get_products_by_supplier('Поставщик_Имя');
+SELECT * FROM get_products_by_supplier('Мегастрой');
 ```
 
 2. По паре дат выдаёт приход/расход товара (неявный курсор = обычный SELECT FOR в plpgsql)
@@ -104,7 +104,7 @@ LANGUAGE plpgsql;
 
 -использование:
 ```sql
-SELECT * FROM get_turnover('2023-01-01', '2024-01-01');
+SELECT * FROM get_turnover('2022-01-01', '2025-12-12');
 ```
 
 3. Увеличить стоимость операций в году на 10% (неявный курсор => UPDATE)
@@ -129,7 +129,7 @@ CALL increase_total_by_year(2024);
 4. Для покупателя — каждая 3 операция: бонус 5%
 ```sql
 -- Выбираем ID покупателя по ФИО
-CREATE OR REPLACE FUNCTION buyer_bonus(lastn TEXT, firstn TEXT)
+CCREATE OR REPLACE FUNCTION buyer_bonus(lastn TEXT, firstn TEXT)
 RETURNS TABLE("Дата" DATE, "Сумма операции" DECIMAL, "Бонус" DECIMAL) AS $$
 DECLARE
     cur_id BIGINT;
@@ -146,15 +146,19 @@ BEGIN
     LOOP
         n := n + 1;
         IF n % 3 = 0 THEN
-            RETURN NEXT (op_rec.op_date, op_rec.totalval, op_rec.totalval * 0.05);
+            "Дата" := op_rec.op_date;
+            "Сумма операции" := op_rec.totalval;
+            "Бонус" := op_rec.totalval * 0.05;
+            RETURN NEXT;
         END IF;
     END LOOP;
 END; $$
 LANGUAGE plpgsql;
+
 ```
 - использование:
 ```sql
-SELECT * FROM buyer_bonus('Иванов', 'Иван');
+SELECT * FROM buyer_bonus('Иванов', 'Петр');
 ```
 
 
@@ -165,21 +169,35 @@ CREATE OR REPLACE FUNCTION running_total(dt1 DATE, dt2 DATE)
 RETURNS TABLE("Товар" TEXT, "Дата операции" DATE, "Количество" INT, "Промежуточный итог" INT) AS $$
 DECLARE
     r RECORD;
-    total INT;
+    total INT := 0;
+    prev_prname TEXT := NULL;
 BEGIN
     FOR r IN
-        SELECT p.PrName, o.orderDate, i.Quantity
+        SELECT 
+            p.PrName, 
+            o.orderDate::DATE, -- приводим к DATE, чтобы скомбинировать записи за один день
+            SUM(i.Quantity) AS Quantity -- суммируем количество для каждого дня
         FROM Items i
         JOIN Product p ON i.idProduct = p.idProduct
         JOIN Orders o ON o.idOrder = i.idOrder
         WHERE o.orderDate BETWEEN dt1 AND dt2
-        ORDER BY p.PrName, o.orderDate
+        GROUP BY p.PrName, o.orderDate::DATE -- группируем по товару и дате
+        ORDER BY p.PrName, o.orderDate::DATE
     LOOP
-        IF total IS NULL OR r.PrName <> previous PrName THEN
+        IF prev_prname IS NULL OR r.PrName <> prev_prname THEN
             total := 0;
         END IF;
+
         total := total + r.Quantity;
-        RETURN NEXT (r.PrName, r.orderDate, r.Quantity, total);
+
+        "Товар" := r.PrName;
+        "Дата операции" := r.orderDate;
+        "Количество" := r.Quantity;
+        "Промежуточный итог" := total;
+
+        prev_prname := r.PrName;
+
+        RETURN NEXT;
     END LOOP;
 END; $$
 LANGUAGE plpgsql;
