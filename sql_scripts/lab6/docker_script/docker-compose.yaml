@@ -1,0 +1,16 @@
+services:
+  replica_postgres:  # Измените имя сервиса во избежание конфликтов!
+    image: postgres:13.3
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - '5433:5433'
+    volumes:
+      - pg_replica_data:/var/lib/postgresql/data  # Отдельный том
+      - pg_replica_ts:/var/lib/postgresql/tablespaces  # Том для пространств
+      - ./backup:/backup:ro  # Только чтение
+
+volumes:
+  pg_replica_data:
+  pg_replica_ts:
