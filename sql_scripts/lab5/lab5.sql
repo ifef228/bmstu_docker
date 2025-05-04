@@ -1,3 +1,9 @@
+CREATE TABLE order_logs(
+    id BIGINT PRIMARY KEY generated DEFAULT by identity,
+    action_type VARCHAR(16), 
+    action_time TIMESTAMP
+)
+
 CREATE OR REPLACE FUNCTION log_new_order()
 RETURNS TRIGGER AS $$
 BEGIN
